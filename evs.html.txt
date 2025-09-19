@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EnviroGami — Gamified Environmental Science</title>
+
+  <link rel="manifest" href="manifest.json">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --accent: #15803d; /* Deeper Green */
+      --accent-light: #dcfce7;
+      --primary-text: #0f172a;
+      --muted-text: #64748b;
+      --border-color: #e2e8f0;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, Arial, sans-serif;
+      margin: 0;
+      background-color: var(--bg);
+      color: var(--primary-text);
+      line-height: 1.6;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      background: var(--card);
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border-color);
+    }
+    header h1 { font-size: 1.1rem; margin: 0; }
+    .lang-select { margin-left: auto; }
+    .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+    .card {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-color);
+    }
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px;}
+    .card-header h2 { margin: 0; font-size: 1.25rem; }
+    .muted { color: var(--muted-text); margin: 4px 0 0; }
+    .divider { height: 1px; background: var(--border-color); margin: 16px 0; }
+
+    /* Buttons & Controls */
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+      font-weight: 500;
+      font-size: 0.9rem;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn:hover { background: #f1f5f9; border-color: #cbd5e1; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0px) scale(0.98); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .btn-primary:hover { background: #166534; border-color: #166534; }
+    .btn-danger { color: var(--danger); }
+    .btn-danger:hover { background: #fef2f2; border-color: #fecaca; }
+
+    /* Dashboard & Stats */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 12px; }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+    }
+    .stat strong { display: block; font-size: 1.5rem; line-height: 1; }
+    .stat small { color: var(--muted-text); font-size: 0.8rem; }
+    .stat-icon { font-size: 1.5rem; }
+    .tag { background: var(--accent-light); color: var(--accent); font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; font-weight: 500;}
+    .session-info { margin-top: 16px; }
+    .timer { font-weight: 600; font-size: 1.25rem; }
+    .dashboard-actions { display: flex; gap: 8px; }
+    .offline-status { font-size: 0.9rem; color: var(--muted-text); }
+    #swState { font-style: italic; color: var(--primary-text); }
+
+    /* Quiz Area */
+    .question { font-weight: 600; font-size: 1.1rem; margin-bottom: 16px; }
+    .answers { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .answer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .answer:hover { border-color: var(--accent); background: #f0fdf4; }
+    .answer.selected { border-color: var(--accent); background: var(--accent-light); font-weight: 500; }
+    .answer.correct { border-color: var(--success); background: #f0fdf4; color: #059669; font-weight: 600; }
+    .answer.wrong { border-color: var(--danger); background: #fef2f2; color: #b91c1c; font-weight: 600; }
+    .answer.correct::after, .answer.wrong::after {
+      content: '';
+      margin-left: auto;
+      width: 20px;
+      height: 20px;
+      background-size: contain;
+    }
+    .answer.correct::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2316a34a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 11.08V12a10 10 0 1 1-5.93-9.14'%3E%3C/path%3E%3Cpolyline points='22 4 12 14.01 9 11.01'%3E%3C/polyline%3E%3C/svg%3E"); }
+    .answer.wrong::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='15' y1='9' x2='9' y2='15'%3E%3C/line%3E%3Cline x1='9' y1='9' x2='15' y2='15'%3E%3C/line%3E%3C/svg%3E"); }
+    .quiz-nav { display: flex; gap: 8px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px; }
+
+    /* Teacher Panel */
+    .teacher-panel { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+    .teacher-panel input, .teacher-panel textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+    .teacher-panel textarea { min-height: 150px; font-family: monospace; }
+    .chart-container { position: relative; height: 250px; width: 100%; }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translate(-50%, 200%);
+      padding: 12px 20px;
+      border-radius: 8px;
+      background: var(--primary-text);
+      color: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      transition: transform 0.4s ease-in-out;
+      z-index: 100;
+      font-weight: 500;
+    }
+    .toast.show { transform: translate(-50%, 0); }
+
+    /* Icons */
+    .icon { width: 1em; height: 1em; }
+
+    /* Responsive */
+    @media (max-width: 920px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) {
+      header { padding: 12px 16px; }
+      header h1 { font-size: 0.9rem; }
+      .container { margin: 16px auto; }
+      .card-header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+
+</head>
+<body>
+  <header>
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden><circle cx="12" cy="12" r="10" fill="#2b8f6e"/><path d="M7 13l3 3 7-9" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h1>EnviroGami — Environmental Science</h1>
+    <div class="lang-select">
+      <select id="lang" class="btn" title="Change language">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी</option>
+        <option value="od">ଓଡ଼ିଆ</option>
+      </select>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2 id="welcome">Welcome, Student</h2>
+            <p id="subhead" class="muted">Play short interactive games — learn about ecosystems, pollution, and more.</p>
+          </div>
+          <div class="controls">
+            <button class="btn" id="newGame"><span class="icon" data-lucide="dice-5"></span> New Quiz</button>
+            <button class="btn" id="matchGame"><span class="icon" data-lucide="shuffle"></span> Match Game</button>
+            <button class="btn" id="teacherMode"><span class="icon" data-lucide="user-cog"></span> Teacher</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div id="gameArea">
+          <div id="quiz" aria-live="polite">
+            <div class="question" id="qtext">Select a game to start</div>
+            <div class="answers" id="answers"></div>
+            <div class="quiz-nav">
+              <button class="btn" id="back" disabled><span class="icon" data-lucide="arrow-left"></span> Back</button>
+              <button class="btn" id="next" disabled>Next <span class="icon" data-lucide="arrow-right"></span></button>
+              <button class="btn btn-primary" id="submit" disabled><span class="icon" data-lucide="check-circle"></span> Submit</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="card-header">
+          <strong>Student Dashboard</strong>
+          <span class="tag" id="gradeLabel">Grade: 7</span>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-icon" style="color: #f59e0b;"><span data-lucide="star"></span></div>
+            <div>
+              <small>Points</small>
+              <strong id="points">0</strong>
+            </div>
+          </div>
+          <div class="stat">
+            <div class="stat-icon" style="color: #10b981;"><span data-lucide="check"></span></div>
+            <div>
+              <small>Correct</small>
+              <strong id="correct">0</strong>
+            </div>
+          </div>
+          <div class="stat">
+            <div class="stat-icon" style="color: #ef4444;"><span data-lucide="x"></span></div>
+            <div>
+              <small>Wrong</small>
+              <strong id="wrong">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="session-info">
+          <small>Session time</small>
+          <div class="timer" id="timer">00:00</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="dashboard-actions">
+          <button class="btn" id="exportLog"><span class="icon" data-lucide="download"></span> Export</button>
+          <button class="btn btn-danger" id="reset"><span class="icon" data-lucide="rotate-ccw"></span> Reset</button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="offline-status">
+          <small>Offline Access</small>
+          <div id="swStatus">Service Worker: <em id="swState">Checking...</em></div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="card" style="margin-top:16px" id="teacherPanel">
+      <strong>Teacher Analytics (PIN: 1234)</strong>
+      <div class="teacher-panel">
+        <input id="teacherPin" type="password" placeholder="Enter teacher PIN">
+        <button class="btn" id="showAnalytics"><span class="icon" data-lucide="eye"></span> Show Analytics</button>
+        <div id="analyticsView" style="display:none">
+          <div class="chart-container">
+            <canvas id="chart"></canvas>
+          </div>
+          <textarea id="logArea" readonly></textarea>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Designed for low-cost devices. Works offline after first load.
+    </footer>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // --- STATE & CONSTANTS ---
+      const CONTENT = {
+        en: {
+          welcome: "Welcome, Student",
+          subhead: "Play short interactive games — learn about ecosystems, pollution, and more.",
+          quizIntro: "Quick Quiz: Ecosystems",
+          q: [
+            {text:"Which of these is a producer in a food chain?", choices:["Frog","Grass","Lion","Eagle"], ans:1},
+            {text:"Primary cause of air pollution in many villages?", choices:["Cars","Forest fires","Burning crop residue","Volcanoes"], ans:2},
+            {text:"What does biodiversity mean?", choices:["Different types of life","A kind of forest","Soil type","Weather pattern"], ans:0}
+          ]
+        },
+        hi: {
+          welcome: "स्वागत है, छात्र",
+          subhead: "छोटे इंटरैक्टिव गेम खेलें — पारिस्थितिकी, प्रदूषण और बहुत कुछ सीखें।",
+          quizIntro: "जलवायु क्विज़: पारिस्थितिकी",
+          q: [
+            {text:"खाद्य श्रृंखला में producer कौन है?", choices:["मेंढक","घास","शेर","गरुड़"], ans:1},
+            {text:"गांवों में वायु प्रदूषण का प्रमुख कारण?", choices:["गाड़ियाँ","वन आग","कृषि अवशेष जलाना","ज्वालामुखी"], ans:2},
+            {text:"जैव विविधता का क्या अर्थ है?", choices:["जीवन के विभिन्न प्रकार","एक प्रकार का जंगल","मृदा प्रकार","मौसम पैटर्न"], ans:0}
+          ]
+        },
+        od: {
+          welcome: "ସ୍ୱାଗତ, ଛାତ୍ର",
+          subhead: "ସଂକ୍ଷିପ୍ତ ଇଣ୍ଟରାକ୍ଟିଭ୍ ଖେଳ କରନ୍ତୁ — ପରିସ୍ଥିତି, ପ୍ରଦୂଷଣ ଏବଂ ଅନ୍ୟାନ୍ୟ ବିଷୟ ଶିଖନ୍ତୁ।",
+          quizIntro: "ପ୍ରଶ୍ନୋତ୍ତର: ପାରିସ୍ଥିତିକୀ",
+          q: [
+            {text:"ଖାଦ୍ୟ ଶୃଙ୍ଖଳରେ producer କିଏ?", choices:["ବେଙ୍ଗ","ଘାସ","ସିଂହ","ଚିଲ"], ans:1},
+            {text:"ଗ୍ରାମରେ ବାୟୁ ପ୍ରଦୂଷଣର ମୁଖ୍ୟ କାରଣ?", choices:["ଗାଡ଼ି","ଜଙ୍ଗଲ ନିଆଁ","ନଡ଼ା ପୋଡ଼ି","ଆଗ୍ନେୟଗିରି"], ans:2},
+            {text:"ଜୈବ ବିବିଧତାର ଅର୍ଥ କ'ଣ?", choices:["ବିଭିନ୍ନ ପ୍ରକାରର ଜୀବ","ଏକ ପ୍ରକାରର ଜଙ୍ଗଲ","ମାଟିର ପ୍ରକାର","ପାଣିପାଗ"], ans:0}
+          ]
+        }
+      };
+      
+      const state = {
+        lang: localStorage.getItem("enviro_lang") || "en",
+        points: Number(localStorage.getItem("enviro_points") || 0),
+        correct: Number(localStorage.getItem("enviro_correct") || 0),
+        wrong: Number(localStorage.getItem("enviro_wrong") || 0),
+        actions: JSON.parse(localStorage.getItem("enviro_actions") || "[]"),
+        elapsed: Number(localStorage.getItem("enviro_elapsed") || 0),
+        currentQ: 0,
+        quiz: [],
+        gameActive: false,
+        selectedAnswer: -1,
+      };
+      let timerInterval;
+      let chartInstance;
+
+      // --- DOM REFERENCES ---
+      const DOMElements = {
+        points: document.getElementById("points"), correct: document.getElementById("correct"), wrong: document.getElementById("wrong"),
+        timer: document.getElementById("timer"), qtext: document.getElementById("qtext"), answers: document.getElementById("answers"),
+        nextBtn: document.getElementById("next"), backBtn: document.getElementById("back"), submitBtn: document.getElementById("submit"),
+        langSel: document.getElementById("lang"), welcome: document.getElementById("welcome"), subhead: document.getElementById("subhead"),
+        newGameBtn: document.getElementById("newGame"), matchGameBtn: document.getElementById("matchGame"),
+        teacherModeBtn: document.getElementById("teacherMode"), teacherPanel: document.getElementById("teacherPanel"),
+        exportLogBtn: document.getElementById("exportLog"), resetBtn: document.getElementById("reset"),
+        showAnalyticsBtn: document.getElementById("showAnalytics"), teacherPinInput: document.getElementById("teacherPin"),
+        analyticsView: document.getElementById("analyticsView"), chartCanvas: document.getElementById("chart"),
+        logArea: document.getElementById("logArea"), swState: document.getElementById("swState"), toast: document.getElementById("toast"),
+      };
+
+      // --- INITIALIZATION ---
+      function init() {
+        DOMElements.langSel.value = state.lang;
+        applyLang();
+        updateStatsUI();
+        startTimer();
+        registerSW();
+        lucide.createIcons();
+        attachEventListeners();
+        DOMElements.teacherPanel.style.display = 'none'; // Hide teacher panel initially
+      }
+
+      // --- EVENT LISTENERS ---
+      function attachEventListeners() {
+        DOMElements.langSel.addEventListener("change", handleLangChange);
+        DOMElements.newGameBtn.addEventListener("click", () => startQuiz());
+        DOMElements.matchGameBtn.addEventListener("click", () => startMatch());
+        DOMElements.teacherModeBtn.addEventListener("click", toggleTeacherPanel);
+        DOMElements.nextBtn.addEventListener("click", () => navigateQuestion(1));
+        DOMElements.backBtn.addEventListener("click", () => navigateQuestion(-1));
+        DOMElements.submitBtn.addEventListener("click", handleSubmit);
+        DOMElements.exportLogBtn.addEventListener("click", handleExport);
+        DOMElements.resetBtn.addEventListener("click", handleReset);
+        DOMElements.showAnalyticsBtn.addEventListener("click", handleShowAnalytics);
+      }
+
+      // --- UI & RENDER FUNCTIONS ---
+      function updateStatsUI() { DOMElements.points.textContent = state.points; DOMElements.correct.textContent = state.correct; DOMElements.wrong.textContent = state.wrong; }
+      
+      function applyLang() {
+        const c = CONTENT[state.lang];
+        DOMElements.welcome.textContent = c.welcome;
+        DOMElements.subhead.textContent = c.subhead;
+        if (state.gameActive) renderQuestion(); // Re-render question if quiz is active
+      }
+
+      function renderQuestion() {
+        const cur = state.quiz[state.currentQ];
+        if (!cur) { DOMElements.qtext.textContent = "Quiz finished! Start a new one."; DOMElements.answers.innerHTML = ""; return; }
+        DOMElements.qtext.textContent = `Q${state.currentQ + 1}: ${cur.text}`;
+        DOMElements.answers.innerHTML = "";
+        cur.choices.forEach((choice, i) => {
+            const div = document.createElement("div");
+            div.className = "answer"; div.tabIndex = 0; div.textContent = choice;
+            div.onclick = () => selectAnswer(i, div);
+            DOMElements.answers.appendChild(div);
+        });
+        updateNavButtons();
+      }
+
+      function updateNavButtons() {
+        DOMElements.backBtn.disabled = state.currentQ === 0;
+        DOMElements.nextBtn.disabled = state.currentQ >= state.quiz.length - 1;
+        DOMElements.submitBtn.disabled = false;
+      }
+
+      function toggleTeacherPanel() {
+        const isVisible = DOMElements.teacherPanel.style.display === 'block';
+        DOMElements.teacherPanel.style.display = isVisible ? 'none' : 'block';
+      }
+      
+      function showToast(message, duration = 3000) {
+        DOMElements.toast.textContent = message; DOMElements.toast.classList.add("show");
+        setTimeout(() => { DOMElements.toast.classList.remove("show"); }, duration);
+      }
+
+      // --- GAME LOGIC ---
+      function startQuiz() {
+        logAction("start_quiz");
+        const pool = CONTENT[state.lang].q.map((q, i) => ({ ...q, id: i }));
+        state.quiz = shuffle(pool).slice(0, 3);
+        state.currentQ = 0; state.gameActive = true; state.selectedAnswer = -1;
+        DOMElements.nextBtn.disabled = false; DOMElements.backBtn.disabled = true;
+        renderQuestion();
+      }
+      
+      function startMatch() { showToast("Matching game coming soon!"); logAction("start_match_placeholder"); }
+
+      function selectAnswer(index, el) {
+        [...DOMElements.answers.children].forEach(c => c.classList.remove("selected"));
+        el.classList.add("selected");
+        state.selectedAnswer = index;
+        logAction("select_answer", { q: state.currentQ, choice: index });
+      }
+
+      function navigateQuestion(direction) {
+        const newIndex = state.currentQ + direction;
+        if (newIndex >= 0 && newIndex < state.quiz.length) {
+            state.currentQ = newIndex; state.selectedAnswer = -1;
+            renderQuestion();
+            logAction("nav_question", { newIndex });
+        }
+      }
+
+      function handleSubmit() {
+        if (state.selectedAnswer === -1) { showToast("Please select an answer first."); logAction("submit_no_choice"); return; }
+        const cur = state.quiz[state.currentQ];
+        const selectedEl = DOMElements.answers.children[state.selectedAnswer];
+        
+        if (state.selectedAnswer === cur.ans) {
+            selectedEl.classList.add("correct"); state.correct++; state.points += 10;
+            logAction("answer_correct", { q: state.currentQ });
+        } else {
+            selectedEl.classList.add("wrong");
+            DOMElements.answers.children[cur.ans].classList.add("correct");
+            state.wrong++; state.points = Math.max(0, state.points - 2); // Prevent negative points
+            logAction("answer_wrong", { q: state.currentQ });
+        }
+        [...DOMElements.answers.children].forEach(c => c.onclick = null);
+        saveState(); updateStatsUI();
+      }
+      
+      // --- HANDLERS & UTILITIES ---
+      function handleLangChange(e) {
+        state.lang = e.target.value; localStorage.setItem("enviro_lang", state.lang);
+        applyLang(); logAction("change_lang", state.lang);
+      }
+
+      function handleExport() {
+        const csv = toCSV(state.actions);
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "enviro_analytics.csv"; a.click();
+        URL.revokeObjectURL(url); logAction("export_csv");
+      }
+      
+      function handleReset() {
+        if (!confirm("Are you sure you want to clear all your progress? This cannot be undone.")) return;
+        state.points = 0; state.correct = 0; state.wrong = 0; state.actions = [];
+        localStorage.clear();
+        updateStatsUI(); logAction("reset_progress");
+        showToast("Progress has been reset.");
+      }
+
+      function handleShowAnalytics() {
+        if (DOMElements.teacherPinInput.value !== "1234") { showToast("Invalid PIN"); return; }
+        DOMElements.analyticsView.style.display = "block";
+        renderChart();
+        DOMElements.logArea.value = JSON.stringify(state.actions, null, 2);
+        logAction("teacher_view_analytics");
+      }
+
+      function logAction(name, payload = {}) {
+        state.actions.push({ t: new Date().toISOString(), name, payload });
+        localStorage.setItem("enviro_actions", JSON.stringify(state.actions));
+      }
+
+      function saveState() {
+        localStorage.setItem("enviro_points", state.points);
+        localStorage.setItem("enviro_correct", state.correct);
+        localStorage.setItem("enviro_wrong", state.wrong);
+        localStorage.setItem("enviro_elapsed", state.elapsed);
+      }
+
+      function startTimer() {
+        clearInterval(timerInterval);
+        const sessionStart = Date.now();
+        timerInterval = setInterval(() => {
+            const totalSeconds = Math.floor((Date.now() - sessionStart) / 1000) + state.elapsed;
+            const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+            const ss = String(totalSeconds % 60).padStart(2, "0");
+            DOMElements.timer.textContent = `${mm}:${ss}`;
+        }, 1000);
+      }
+      
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; }
+        return array;
+      }
+
+      function toCSV(arr) {
+        if (!arr.length) return "time,name,payload\n";
+        const rows = arr.map(r => `"${r.t}","${r.name}","${JSON.stringify(r.payload).replace(/"/g, '""')}"`);
+        return "time,name,payload\n" + rows.join("\n");
+      }
+
+      // --- ANALYTICS CHART (Chart.js) ---
+      function renderChart() {
+        const pointsOverTime = state.actions.reduce((acc, action) => {
+            let lastPoint = acc.length > 0 ? acc[acc.length - 1].p : 0;
+            if (action.name.includes("correct")) lastPoint += 10;
+            if (action.name.includes("wrong")) lastPoint = Math.max(0, lastPoint - 2);
+            acc.push({ t: new Date(action.t), p: lastPoint });
+            return acc;
+        }, []);
+
+        if (chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(DOMElements.chartCanvas, {
+            type: 'line',
+            data: {
+                labels: pointsOverTime.map(d => d.t.toLocaleTimeString()),
+                datasets: [{
+                    label: 'Points Over Time',
+                    data: pointsOverTime.map(d => d.p),
+                    borderColor: '#15803d',
+                    backgroundColor: 'rgba(21, 128, 61, 0.1)',
+                    fill: true, tension: 0.2,
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+        });
+      }
+
+      // --- SERVICE WORKER ---
+      async function registerSW() {
+        if ("serviceWorker" in navigator) {
+            try {
+                await navigator.serviceWorker.register("sw.js");
+                DOMElements.swState.textContent = "Active & Ready for Offline";
+                logAction("sw_register_success");
+            } catch (e) {
+                DOMElements.swState.textContent = "Registration Failed";
+                console.error("SW registration failed:", e);
+            }
+        } else { DOMElements.swState.textContent = "Not Supported by Browser"; }
+      }
+
+      // Start the application
+      init();
+    });
+  </script>
+</body>
+</html>
